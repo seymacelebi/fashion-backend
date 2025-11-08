@@ -1,0 +1,30 @@
+[
+  {
+    "id": 101,
+    "name": "Mavi Kot Ceket",
+    "color": "Mavi",
+    "imageUrl": "images/mavi-kot-ceket.jpg",
+    "category": { "id": 1, "name": "Üst Giyim" }
+  },
+  {
+    "id": 102,
+    "name": "Beyaz Basic Tişört",
+    "color": "Beyaz",
+    "imageUrl": "images/beyaz-tisort.jpg",
+    "categories": { "id": 1, "name": "Üst Giyim" }
+  },
+  {
+    "id": 201,
+    "name": "Siyah Keten Pantolon",
+    "color": "Siyah",
+    "imageUrl": "images/siyah-pantolon.jpg",
+    "category": { "id": 2, "name": "Alt Giyim" }
+  },
+  {
+    "id": 301,
+    "name": "Beyaz Spor Ayakkabı",
+    "color": "Beyaz",
+    "imageUrl": "images/beyaz-ayakkabi.jpg",
+    "category": { "id": 3, "name": "Ayakkabı" }
+  }
+]

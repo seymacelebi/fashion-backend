@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@site.com",
+    "password": "admin123",
+    "roles": ["ROLE_ADMIN", "ROLE_YONETICI", "ROLE_USER"]
+  },
+  {
+    "id": 2,
+    "username": "yonetici",
+    "email": "yonetici@site.com",
+    "password": "yonetici123",
+    "roles": ["ROLE_YONETICI", "ROLE_USER"]
+  },
+  {
+    "id": 3,
+    "username": "ayse",
+    "email": "ayse@site.com",
+    "password": "ayse123",
+    "roles": ["ROLE_USER"]
+  }
+]

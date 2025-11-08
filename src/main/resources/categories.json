@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "name": "Üst Giyim"
+  },
+  {
+    "id": 2,
+    "name": "Alt Giyim"
+  },
+  {
+    "id": 3,
+    "name": "Ayakkabı"
+  },
+  {
+    "id": 4,
+    "name": "Şal"
+  },
+  {
+    "id": 5,
+    "name": "Aksesuar"
+  }
+]
