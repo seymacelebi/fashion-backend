@@ -1,2 +1,18 @@
 # Project exclude paths
 /target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Log dosyaları
+*.log
+
+# İşletim sistemi dosyaları
+.DS_Store
+Thumbs.db

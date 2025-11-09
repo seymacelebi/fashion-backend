@@ -1,50 +1,56 @@
-package com.fashion.fashion_backend.config;
-//... diğer importlar ...
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import static org.springframework.security.config.Customizer.withDefaults; // Bu importu ekleyin
+package com.fashion.fashion_backend.config; // Kendi config paketinizin adı
 
-import java.util.List;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationProvider; // Bunu zaten ApplicationConfig'de tanımladınız
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; // !! 1. KRİTİK NOKTA !!
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity // @PreAuthorize'un çalışması için bu ŞART!
+@RequiredArgsConstructor
 public class SecurityConfig {
 
- @Bean
- public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-     http
-         // YENİ EKLENEN SATIR: CORS ayarlarını güvenlik zincirine dahil et.
-         .cors(withDefaults()) 
-         .csrf(csrf -> csrf.disable())
-         .authorizeHttpRequests(auth -> auth
-             .requestMatchers("/**").permitAll() // Şimdilik tüm yollara izin verelim
-             .anyRequest().authenticated()
-         );
+    // Kendi JwtAuthenticationFilter sınıfınız (bir önceki adımda göstermiştiniz)
+    private final JwtAuthenticationFilter jwtAuthFilter;
 
-     return http.build();
- }
+    // ApplicationConfig'de oluşturduğunuz AuthenticationProvider bean'i
+    private final AuthenticationProvider authenticationProvider;
 
- // YENİ EKLENEN METOT: CORS ayarlarını merkezi olarak tanımlar.
- @Bean
- CorsConfigurationSource corsConfigurationSource() {
-     CorsConfiguration configuration = new CorsConfiguration();
-     // React uygulamanızın adresine izin verin:
-     configuration.setAllowedOrigins(List.of("http://localhost:5173")); 
-     // İzin verilen HTTP metotları:
-     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); 
-     // İzin verilen başlıklar:
-     configuration.setAllowedHeaders(List.of("Authorization", "Content-Type")); 
-     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-     source.registerCorsConfiguration("/**", configuration); // Tüm API yolları için bu ayarları geçerli kıl
-     return source;
- }
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable()) // REST API'ler için standart
 
- // ... diğer bean'leriniz (PasswordEncoder vb.) ...
+                // !! 2. KRİTİK NOKTA: İSTEK KURALLARI !!
+                .authorizeHttpRequests(auth -> auth
+                        // BU YOLLARA (Giriş, Kayıt, Swagger) KİMLİK DOĞRULAMASI OLMADAN ERİŞİLEBİLSİN
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+
+                        // YUKARIDAKİLER DIŞINDAKİ TÜM İSTEKLER...
+                        .anyRequest()
+                        .authenticated() // ...KİMLİK DOĞRULAMASI GEREKTİRSİN
+                )
+
+                // JWT kullandığımız için oturum (Session) STATELESS olmalı
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // Spring'e hangi AuthenticationProvider'ı kullanacağını söylüyoruz
+                .authenticationProvider(authenticationProvider)
+
+                // Sizin JWT filtrenizi, standart filtreden ÖNCE çalıştır
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
 }
