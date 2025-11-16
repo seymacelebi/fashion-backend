@@ -1,6 +1,7 @@
 package com.fashion.fashion_backend.config;
 
-import com.fashion.fashion_backend.config.JwtService; // 'security' paketinden import
+// Gerekli tüm importlar
+import com.fashion.fashion_backend.config.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,17 +13,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component; // <-- BU ANOTASYON KRİTİK!
-import org.springframework.web.filter.OncePerRequestFilter;
-
+import org.springframework.stereotype.Component;
 import java.io.IOException;
+import org.springframework.web.filter.OncePerRequestFilter; // !! HATA BURADAYDI, BU SATIR EKLENDİ !!
 
-@Component // Spring'in bu sınıfı yönetmesini ve içine 'bean'leri enjekte etmesini sağlar
-@RequiredArgsConstructor // 'final' alanlar için constructor'ı otomatik oluşturur
+@Component
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    // @RequiredArgsConstructor sayesinde Spring bu alanları OTOMATİK OLARAK doldurur.
-    // 'this.jwtService' ASLA 'null' OLMAZ.
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
@@ -32,6 +30,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+
+        // Eğer istek '/api/v1/auth' (veya /api/auth) gibi herkese açık
+        // bir yola geliyorsa, bu bir login/register isteğidir, token kontrolü YAPMA.
+        final String servletPath = request.getServletPath();
+        if (servletPath.contains("/api/v1/auth") ||
+                servletPath.contains("/api/auth") ||
+                servletPath.contains("/swagger-ui") || // Swagger yollarını da es geç
+                servletPath.contains("/v3/api-docs")) { // Swagger yollarını da es geç
+
+            filterChain.doFilter(request, response); // İsteği olduğu gibi bir sonrakine ilet
+            return; // Bu filtredeki işlemi bitir
+        }
+
+        // --- Buradan sonrası SADECE korumalı yollar için çalışacak ---
 
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
@@ -43,9 +55,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         jwt = authHeader.substring(7); // "Bearer " kısmını atla (7 karakter)
-        
-        // Hatanın olduğu yer burasıydı. 'jwtService' artık null olmayacak.
-        userEmail = jwtService.extractUsername(jwt); 
+
+        userEmail = jwtService.extractUsername(jwt);
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
