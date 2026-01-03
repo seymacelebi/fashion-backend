@@ -56,7 +56,6 @@ public class User implements UserDetails {
                 .map(role -> new SimpleGrantedAuthority(role.name()))
                 .collect(Collectors.toList());
     }
-
     // `UserDetails` password alanını implemente ediyoruz.
     @Override
     public String getPassword() {
@@ -91,4 +90,6 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+
 }

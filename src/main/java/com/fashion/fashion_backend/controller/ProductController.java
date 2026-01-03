@@ -8,7 +8,9 @@ import com.fashion.fashion_backend.entity.User; // GÜNCELLEME: User entity'sini
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication; // GÜNCELLEME: Güvenlik importları
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -30,23 +32,25 @@ public class ProductController {
         this.productService = productService;
     }
 
-    /**
-     * Yeni bir giysi (product) oluşturur.
-     * POST isteği ile /api/products adresine gelir.
-     * Sadece giriş yapmış kullanıcılar erişebilir.
-     */
-    @PostMapping
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ProductDto> createProduct(
-            @Valid @RequestBody ProductCreateDto createDto
+            @ModelAttribute ProductCreateDto createDto
     ) {
-        // GÜNCELLEME: Siparişi (createDto) Şef'e (productService) ilet.
-        // Artık Şef'e o anki kullanıcının ID'sini de vermemiz gerekiyor.
+        System.out.println("IMAGE NULL MI? " + (createDto.image() == null));
+        System.out.println("IMAGE NAME: " +
+                (createDto.image() != null ? createDto.image().getOriginalFilename() : "NULL"));
+
         Long currentUserId = getCurrentUserId();
-        ProductDto newProduct = productService.createProduct(createDto, currentUserId);
-        
-        // "Başarıyla oluşturuldu" (201) yanıtı ile yeni ürünü dön
-        return ResponseEntity.status(HttpStatus.CREATED).body(newProduct);
+
+        ProductDto newProduct =
+                productService.createProduct(createDto, currentUserId);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(newProduct);
     }
+
 
     /**
      * O an giriş yapmış kullanıcının giysilerini listeler.
@@ -88,10 +92,7 @@ public class ProductController {
         return ResponseEntity.ok(product);
     }
 
-    /**
-     * Belirli bir ID'ye sahip giysiyi siler.
-     * DELETE isteği ile /api/products/{id} adresine gelir.
-     */
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(
             @PathVariable("id") Long productId

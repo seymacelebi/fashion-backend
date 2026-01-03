@@ -1,11 +1,13 @@
 package com.fashion.fashion_backend.service;
 
+import com.fashion.fashion_backend.entity.Brand;
 import com.fashion.fashion_backend.entity.Category;
 import com.fashion.fashion_backend.entity.Product;
 import com.fashion.fashion_backend.entity.User;
 import com.fashion.fashion_backend.entity.dto.ProductDTOs.ProductCreateDto;
 import com.fashion.fashion_backend.entity.dto.ProductDTOs.ProductDto;
 import com.fashion.fashion_backend.exception.ResourceNotFoundException;
+import com.fashion.fashion_backend.repository.BrandRepository;
 import com.fashion.fashion_backend.repository.CategoryRepository;
 import com.fashion.fashion_backend.repository.ProductRepository;
 import com.fashion.fashion_backend.repository.UserRepository;
@@ -16,6 +18,11 @@ import org.springframework.transaction.annotation.Transactional; // <-- YENİ IM
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import org.springframework.web.multipart.MultipartFile;
+
 
 /**
  * ProductService arayüzünün (interface) somut uygulaması.
@@ -28,40 +35,71 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final Cloudinary cloudinary;
+    private final BrandRepository brandRepository;
 
     @Autowired
     public ProductServiceImpl(ProductRepository productRepository,
                               UserRepository userRepository,
-                              CategoryRepository categoryRepository) {
+                              CategoryRepository categoryRepository, Cloudinary cloudinary, BrandRepository brandRepository) {
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
+        this.cloudinary = cloudinary;
+        this.brandRepository = brandRepository;
     }
 
     @Override
-    @Transactional // <-- YENİ EKLENDİ (Yazma işlemi)
+    @Transactional
     public ProductDto createProduct(ProductCreateDto createDto, Long userId) {
-        // 1. İş Mantığı: Giysiyi ekleyen kullanıcı var mı?
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
-        // 2. İş Mantığı: Giysinin ekleneceği kategori var mı?
         Category category = categoryRepository.findById(createDto.categoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + createDto.categoryId()));
 
-        // 3. Yeni Product (Giysi) entity'sini oluştur
+        Brand brand = null;
+        if (createDto.brandName() != null && !createDto.brandName().isBlank()) {
+            brand = brandRepository.findByName(createDto.brandName())
+                    .orElseGet(() -> {
+                        Brand newBrand = new Brand();
+                        newBrand.setName(createDto.brandName());
+                        return brandRepository.save(newBrand); // Yeni markayı kaydet
+                    });
+        }
+
+        String imageUrl = null;
+
+        try {
+            MultipartFile imageFile = createDto.image(); // 🔥 DOĞRU
+
+            if (imageFile != null && !imageFile.isEmpty()) {
+                var uploadResult = cloudinary.uploader().upload(
+                        imageFile.getBytes(),
+                        ObjectUtils.asMap("folder", "products")
+                );
+                imageUrl = uploadResult.get("secure_url").toString();
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Image upload failed", e);
+        }
+
         Product newProduct = new Product();
         newProduct.setName(createDto.name());
-        newProduct.setImageUrl(createDto.imageUrl());
-        newProduct.setUser(user); // İlişkiyi kur (Foreign Key)
-        newProduct.setCategory(category); // İlişkiyi kur (Foreign Key)
-
-        // 4. Veritabanına kaydet
+        newProduct.setImageUrl(imageUrl);
+        newProduct.setColor(createDto.color());
+        newProduct.setSeason(createDto.season());
+        newProduct.setStyle(createDto.style());
+        newProduct.setUser(user);
+        newProduct.setCategory(category);
+        newProduct.setBrand(brand);
         Product savedProduct = productRepository.save(newProduct);
 
-        // 5. Kaydedilen entity'yi DTO'ya çevirip Controller'a dön
         return mapToDto(savedProduct);
     }
+
 
     @Override
     @Transactional(readOnly = true) // <-- YENİ EKLENDİ (Okuma işlemi)
@@ -127,17 +165,24 @@ public class ProductServiceImpl implements ProductService {
      * Product entity'sini ProductDto'ya dönüştüren özel bir yardımcı metot.
      * Kod tekrarını engeller.
      */
+    // === YARDIMCI METOT (HELPER METHOD) ===
     private ProductDto mapToDto(Product product) {
-        // NullPointerException'a karşı daha güvenli (defansif) kod.
+        // NullPointerException'a karşı güvenli alanlar
         String categoryName = (product.getCategory() != null) ? product.getCategory().getName() : null;
+        String brandName = (product.getBrand() != null) ? product.getBrand().getName() : null;
         Long userId = (product.getUser() != null) ? product.getUser().getId() : null;
 
         return new ProductDto(
                 product.getId(),
                 product.getName(),
                 product.getImageUrl(),
-                categoryName, // Kategori adını ilişkiden güvenle çek
-                userId // Kullanıcı ID'sini ilişkiden güvenle çek
+                categoryName,
+                userId,
+                product.getColor(),
+                product.getSeason(),
+                product.getStyle(),
+                brandName,
+                product.getPrice()
         );
     }
 }

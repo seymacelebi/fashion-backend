@@ -64,7 +64,7 @@ public class JwtService {
 
     // Token'ın geçerli olup olmadığını kontrol eder
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
+                final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
