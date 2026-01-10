@@ -100,6 +100,78 @@ public class ProductServiceImpl implements ProductService {
         return mapToDto(savedProduct);
     }
 
+    @Override
+    @Transactional
+    public ProductDto updateProduct(
+            Long productId,
+            ProductCreateDto updateDto,
+            Long userId
+    ) {
+
+        // 1️⃣ User kontrolü
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found with id: " + userId));
+
+        // 2️⃣ Product'ı bul
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Product not found with id: " + productId));
+
+        // 3️⃣ Sahiplik kontrolü (ÇOK ÖNEMLİ)
+        if (!product.getUser().getId().equals(user.getId())) {
+            throw new AccessDeniedException("You are not allowed to update this product");
+        }
+
+        // 4️⃣ Category
+        Category category = categoryRepository.findById(updateDto.categoryId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Category not found with id: " + updateDto.categoryId()));
+
+        // 5️⃣ Brand (create ile birebir)
+        Brand brand = null;
+        if (updateDto.brandName() != null && !updateDto.brandName().isBlank()) {
+            brand = brandRepository.findByName(updateDto.brandName())
+                    .orElseGet(() -> {
+                        Brand newBrand = new Brand();
+                        newBrand.setName(updateDto.brandName());
+                        return brandRepository.save(newBrand);
+                    });
+        }
+
+        // 6️⃣ Image (sadece yeni geldiyse değiştir)
+        try {
+            MultipartFile imageFile = updateDto.image();
+
+            if (imageFile != null && !imageFile.isEmpty()) {
+                var uploadResult = cloudinary.uploader().upload(
+                        imageFile.getBytes(),
+                        ObjectUtils.asMap("folder", "products")
+                );
+                String imageUrl = uploadResult.get("secure_url").toString();
+                product.setImageUrl(imageUrl);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Image upload failed", e);
+        }
+
+        // 7️⃣ Alanları güncelle
+        product.setName(updateDto.name());
+        product.setColor(updateDto.color());
+        product.setSeason(updateDto.season());
+        product.setStyle(updateDto.style());
+        product.setCategory(category);
+        product.setBrand(brand);
+
+        // 8️⃣ Save
+        Product updatedProduct = productRepository.save(product);
+
+        return mapToDto(updatedProduct);
+    }
+
+
+
 
     @Override
     @Transactional(readOnly = true) // <-- YENİ EKLENDİ (Okuma işlemi)

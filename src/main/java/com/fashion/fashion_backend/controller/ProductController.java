@@ -77,6 +77,31 @@ public class ProductController {
         return ResponseEntity.ok(products);
     }
 
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping(
+            value = "/{id}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ProductDto> updateProduct(
+            @PathVariable Long id,
+            @ModelAttribute ProductCreateDto updateDto
+    ) {
+        System.out.println("UPDATE PRODUCT ID: " + id);
+        System.out.println("IMAGE NULL MI? " + (updateDto.image() == null));
+        System.out.println("IMAGE NAME: " +
+                (updateDto.image() != null
+                        ? updateDto.image().getOriginalFilename()
+                        : "NULL"));
+
+        Long currentUserId = getCurrentUserId();
+
+        ProductDto updatedProduct =
+                productService.updateProduct(id, updateDto, currentUserId);
+
+        return ResponseEntity.ok(updatedProduct);
+    }
+
+
     /**
      * Belirli bir ID'ye sahip giysiyi getirir.
      * GET isteği ile /api/products/{id} adresine gelir.
@@ -106,12 +131,6 @@ public class ProductController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * O an kimlik doğrulaması yapmış olan kullanıcının ID'sini
-     * SecurityContext'ten (Güvenlik Sisteminden) çeken yardımcı metot.
-     *
-     * @return Giriş yapmış kullanıcının Long tipindeki ID'si
-     */
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         

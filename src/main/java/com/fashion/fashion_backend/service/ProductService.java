@@ -23,6 +23,8 @@ public interface ProductService {
      */
     ProductDto createProduct(ProductCreateDto createDto, Long userId);
 
+    ProductDto updateProduct(Long productId, ProductCreateDto updateDto, Long userId);
+
     /**
      * Belirli bir ID'ye sahip giysiyi, sahibinin ID'si ile birlikte getirir.
      *
