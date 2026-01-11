@@ -26,19 +26,18 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String username;
 
-    // YENİ: Email alanı eklendi. Boş olamaz ve benzersiz olmalı.
     @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
     private String password;
-    
- // BİR Kullanıcının, ÇOK Giysisi olabilir.
-    // 'mappedBy = "user"' -> Product sınıfındaki 'user' alanının bu ilişkinin sahibi olduğunu belirtir.
+
+    @Column(nullable = true)
+    private String city;
+
     @OneToMany(mappedBy = "user")
     private Set<Product> products;
     
-    // BİR Kullanıcının, ÇOK Kombini olabilir.
     @OneToMany(mappedBy = "user")
     private Set<Combination> combinations;
 
@@ -47,6 +46,10 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false)
     private Set<Role> roles;
+
+    public String getRealUsername() {
+        return this.username;
+    }
 
     // --- UserDetails METOTLARI ---
     // Rollerimizi Spring Security'nin anladığı formata çeviriyoruz.
@@ -90,6 +93,7 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
 
 
 }

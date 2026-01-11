@@ -26,10 +26,6 @@ public class AuthController {
         this.authService = authService;
     }
 
-    /**
-     * Yeni kullanıcı kayıt endpoint'i.
-     * POST isteği ile /api/auth/register adresine gelir.
-     */
     @PostMapping("/register")
     public ResponseEntity<AuthResponseDto> register(
             @Valid @RequestBody RegisterRequestDto request // Gelen isteğin 'body' kısmını DTO'ya çevir
@@ -40,10 +36,6 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * Kullanıcı giriş endpoint'i.
-     * POST isteği ile /api/auth/login adresine gelir.
-     */
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> login(
             @Valid @RequestBody LoginRequestDto request

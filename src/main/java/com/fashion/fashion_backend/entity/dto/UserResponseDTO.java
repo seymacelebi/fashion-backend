@@ -23,7 +23,6 @@ public class UserResponseDTO {
                 user.getId(),
                 user.getUsername(), // Bu hala username olarak kalabilir.
                 user.getEmail(),
-                // DÜZELTME: Set<Role> -> Set<String> dönüşümü yapıldı.
                 user.getRoles().stream().map(Role::name).collect(Collectors.toSet())
         );
     }

@@ -23,16 +23,10 @@ public class UserServiceImpl implements UserService {
         this.userRepository = userRepository;
     }
 
-    /**
-     * O anda giriş yapmış kullanıcının profilini getirir.
-     */
+
     @Override
     @Transactional(readOnly = true)
-    // @PreAuthorize("isAuthenticated()") // Bu metodun çağrılabilmesi için
-    // kullanıcının giriş yapmış olması gerekir. (Bu kural genellikle SecurityConfig'de
-    // genel olarak belirlenir, ancak burada da belirtilebilir.)
     public UserProfileDto getCurrentUserProfile() {
-        // O anda giriş yapmış kullanıcının kimliğini Spring Security'den al
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         String userEmail;
@@ -42,42 +36,29 @@ public class UserServiceImpl implements UserService {
             userEmail = principal.toString();
         }
 
-        // Email (bizim 'username'imiz) kullanarak kullanıcıyı veritabanından bul
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Giriş yapmış kullanıcı veritabanında bulunamadı."));
 
-        // Entity'yi DTO'ya çevir ve döndür
         return mapToUserProfileDto(user);
     }
 
-    /**
-     * [ADMIN ÖZEL] Tüm kullanıcıları listeler.
-     */
+
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasRole('ADMIN')") // !! ÖNEMLİ !! Sadece ADMIN rolüne sahip olanlar bu metodu çağırabilir.
+    @PreAuthorize("hasRole('ADMIN')")
     public List<UserProfileDto> getAllUsers() {
-        // Veritabanındaki tüm kullanıcıları çek
         List<User> users = userRepository.findAll();
 
-        // Tüm listeyi DTO listesine çevir ve döndür
         return users.stream()
                 .map(this::mapToUserProfileDto)
                 .collect(Collectors.toList());
     }
 
-
-    // --- YARDIMCI METOT ---
-
-    /**
-     * User (Entity) nesnesini, dış dünyaya güvenle döndürülecek
-     * UserProfileDto nesnesine dönüştürür.
-     */
     private UserProfileDto mapToUserProfileDto(User user) {
         return new UserProfileDto(
                 user.getId(),
-                user.getUsername(),
-                user.getEmail()
+                user.getEmail(),
+                user.getRealUsername()
         );
     }
 }

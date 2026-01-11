@@ -14,7 +14,8 @@ public class AuthDTOs {
     public static record RegisterRequestDto(
             String username,
             String email,
-            String password
+            String password,
+            String city // Yeni alan
     ) {
     }
 
@@ -41,7 +42,8 @@ public class AuthDTOs {
             String token,
             Long userId,
             String email,
-            String username
+            String username,
+            String city
     ) {
     }
 }

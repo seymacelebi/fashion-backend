@@ -53,8 +53,9 @@ public class AuthServiceImpl implements AuthService {
         User newUser = User.builder()
                 .username(request.username())
                 .email(request.email())
-                .password(passwordEncoder.encode(request.password())) // ŞİFREYİ HASH'LEME
-                .roles(Set.of(Role.ROLE_USER)) // Varsayılan rol ataması
+                .password(passwordEncoder.encode(request.password()))
+                .city(request.city())
+                .roles(Set.of(Role.ROLE_USER))
                 .build();
 
         // Kullanıcıyı veritabanına kaydet
@@ -64,12 +65,12 @@ public class AuthServiceImpl implements AuthService {
         // UserDetails'in getUsername() metodu email'i döndürdüğü için token email ile üretilir
         String jwtToken = jwtService.generateToken(savedUser);
 
-        // Yanıtı DTO olarak dön
         return new AuthResponseDto(
                 jwtToken,
                 savedUser.getId(),
                 savedUser.getEmail(),
-                savedUser.getUsername() // Gerçek username alanını döndürüyoruz
+                savedUser.getRealUsername(),
+                savedUser.getCity()
         );
     }
 
@@ -93,12 +94,12 @@ public class AuthServiceImpl implements AuthService {
         // 3. JWT Token oluştur
         String jwtToken = jwtService.generateToken(user);
 
-        // 4. Yanıtı DTO olarak dön
         return new AuthResponseDto(
                 jwtToken,
                 user.getId(),
                 user.getEmail(),
-                user.getUsername()
+                user.getRealUsername(),
+                user.getCity()
         );
     }
 }
